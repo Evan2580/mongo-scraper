@@ -7,6 +7,14 @@ $.getJSON("/articles", function(data) {
   }
 });
 
+$(document).on("click", "#scrape", function() {
+  $.ajax({
+    method: "GET",
+    url: "/scrape"
+  }).then(function(){
+    location.reload();
+  });
+});
 
 // Whenever someone clicks a p tag
 $(document).on("click", "p", function() {
