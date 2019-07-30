@@ -22,7 +22,7 @@ var ArticleSchema = new Schema({
 },
   note: {
     type: String,
-    
+    ref: "Note"
   }
 });
 

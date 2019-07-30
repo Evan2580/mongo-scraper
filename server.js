@@ -13,6 +13,9 @@ var cheerio = require("cheerio");
 var db = require("./models");
 
 var PORT = 3000;
+const HTML_DIR = __dirname + "/public/"
+const SCRAPE_URL = "https://www.pga.com/topic/news";
+const PGA_HOME = "https://www.pga.com";
 
 // Initialize Express
 var app = express();
@@ -28,14 +31,14 @@ app.use(express.json());
 app.use(express.static("public"));
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/mongoScraper", { useNewUrlParser: true });
+mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost/mongoScraper", { useNewUrlParser: true });
 
 // Routes
 
 // A GET route for scraping the echoJS website
 app.get("/scrape", function(req, res) {
   // First, we grab the body of the html with axios
-  axios.get("https://www.pga.com/topic/news").then(function(response) {
+  axios.get(SCRAPE_URL).then(function(response) {
     // Then, we load that into cheerio and save it to $ for a shorthand selector
     var $ = cheerio.load(response.data);
 
@@ -49,12 +52,13 @@ app.get("/scrape", function(req, res) {
       result.title = $(this)
         .children(".topic-article-title").children("a")
         .text();
-      result.link = $(this)
+      result.link = PGA_HOME + $(this)
         .children(".topic-article-title").children("a")
         .attr("href");
       result.summary = $(this)
-        .children(".topic-article-description").children("span")
-        .children("topic-article-byline-news").text();
+        .children(".topic-article-description")
+        .text()
+        .trim();
         console.log(result.summary)
 
       // Create a new Article using the `result` object built from scraping
@@ -70,12 +74,12 @@ app.get("/scrape", function(req, res) {
     });
 
     // Send a message to the client
-    res.send("Scrape Complete");
+    res.sendfile(HTML_DIR + "/scrape.html");
   });
 });
 
 // Route for getting all Articles from the db
-app.get("/articles", function(req, res) {
+app.get(["/", "/articles"], function(req, res) {
   // Grab every document in the Articles collection
   console.log("articles here")
   db.Article.find({})
@@ -97,6 +101,7 @@ app.get("/articles/:id", function(req, res) {
     .populate("note")
     .then(function(dbArticle) {
       // If we were able to successfully find an Article with the given id, send it back to the client
+      console.log(`/articles/${req.params.id}`);
       res.json(dbArticle);
     })
     .catch(function(err) {
